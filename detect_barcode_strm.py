@@ -2,20 +2,26 @@
 import numpy as np
 import argparse
 import cv2
+#import zxing
 
+#reader = zxing.BarCodeReader()
 #ap = argparse.ArgumentParser()
 #ap.add_argument("-i", "--image", required=True, help = "")
 #args = vars(ap.parse_args())
 
 cap = cv2.VideoCapture('windowClearner.mp4')
 
+#fourcc = cv2.VideoWriter_fourcc(*'XVID')
+#out = cv2.VideoWriter('barcodeCaptured.mp4', fourcc, 20.0,(540,960))
+count = 0
 while(cap.isOpened()):
     ret, frame = cap.read()
     if ret == True:
+        count = count + 1 
 #load the image and convert it to greyscale
         #image = cv2.imread(frame)
         height, width, layers = frame.shape
-        resize = cv2.resize(frame, (int(width/2), int(height/2)))
+        resize = cv2.resize(frame, (int(width*.75), int(height*.75)))
         gray = cv2.cvtColor(resize, cv2.COLOR_BGR2GRAY)
 
 #computer the Scharr gradient magnitude representation of the images
@@ -46,6 +52,16 @@ while(cap.isOpened()):
             c = sorted(cnts, key = cv2.contourArea, reverse = True)[0]
             rect = cv2.minAreaRect(c) 
             box = np.int0(cv2.boxPoints(rect))
+            x, y, width, height = cv2.boundingRect(box)
+            width = width + 20
+            height = height + 20
+            if (width != 0) or (height != 0):
+                roi = resize[y-10:y+height, x-10:x+width]
+            else:
+                roi = resize
+            if count % 20 == 0:
+                cv2.imwrite("./frames/frame%d.jpg" % count, roi)
+
             cv2.drawContours(resize, [box], -1, (0, 255, 0), 3)
 #compute the rotated bounding box of the largest contour
 
@@ -54,9 +70,8 @@ while(cap.isOpened()):
 
 
         
-        #out.write(frame)
+#        out.write(frame)
         cv2.imshow("Image", resize)
-
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
     else:
